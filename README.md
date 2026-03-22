@@ -1,12 +1,7 @@
 # Earls-Environment-Monitor
 Real-time IoT environment monitor built with ESP32, DHT11, and OLED display. Tracks temperature and humidity with AWS cloud integration — built to monitor conditions for Earl, my cat.
 
-![Untitled](https://github.com/user-attachments/assets/41a15d56-f4ed-4633-8569-ce84b0aa22bd)
-
-
-## Phase 1
-
-## The Hardware
+## Phase 1 — Hardware + OLED display 
 
 **ESP32**
 microcontroller with WiFi and Bluetooth built in and GPIO pins (General Purpose Input/Output) that let it talk to other components
@@ -16,10 +11,7 @@ A sensor that measures temperature and humidity. It communicates by sending puls
 
 **OLED Display**
 A screen that uses protocol called **I2C** (eye-squared-C) SDA (data) and SCL (clock). The clock wire keeps both devices in sync
-
----
-
-## The Wiring
+![Untitled](https://github.com/user-attachments/assets/41a15d56-f4ed-4633-8569-ce84b0aa22bd)
 
 **DHT11 wiring**
 
@@ -31,20 +23,14 @@ A screen that uses protocol called **I2C** (eye-squared-C) SDA (data) and SCL (c
 
 - `VCC` → 3.3V power rail
 - `GND` → GND rail
-- `SCL` → GPIO 22 (clock signal)
-- `SDA` → GPIO 21 (data signal)
-
-GPIO 21 and 22 are the ESP32's dedicated **I2C pins** — hardwired into the chip for this purpose.
-
----
-
-## The Code
-
+- `SCL` → GPIO 22 (clock signal) dedicated **I2C pins**
+- `SDA` → GPIO 21 (data signal) dedicated **I2C pins**
+- 
 **Libraries**
 
 - `DHT.h` — knows how to talk to DHT sensors
 - `Wire.h` — handles I2C communication
-- `Adafruit_SSD1306.h` — knows how to drive your specific OLED chip
+- `Adafruit_SSD1306.h` — knows how to drive OLED chip
 - `Adafruit_GFX.h` — handles drawing text and graphics
 
 **setup()**
@@ -54,9 +40,7 @@ initialize the sensor, find the OLED, and display the startup message "Earl's Ro
 Every 3 seconds it reads temp and humidity from the DHT11, formats the numbers, and draws them on the OLED screen
 
 **I2C Address (0x3C)**
-the OLED's address is 0x3C (hexadecimal).  ran I2C scanner sketch to discover this because different manufacturers sometimes use different addresses.
-
----
+the OLED's address is 0x3C (hexadecimal).  ran I2C scanner sketch to discover
 
 ## The Debugging
 
@@ -66,13 +50,19 @@ the OLED's address is 0x3C (hexadecimal).  ran I2C scanner sketch to discover th
 
 **Pin sharing conflict** — DHT11 and OLED were both trying to use the same 3V3 pin on the ESP32. Fixed by routing both through the breadboard rail so the ESP32 feeds one rail and everything draws from it.
 
----
-
-## Phase 2
+## Phase 2 — AWS IoT Core connection
 
 DHT11 sensor reads every 3 seconds
 ESP32 formats as JSON and publishes via MQTT over TLS
 AWS IoT Core receives it
 
-<img width="1005" height="576" alt="Screenshot 2026-03-22 at 12-33-01 MQTT test client IoT Core us-east-1" src="https://github.com/user-attachments/assets/b27a1933-dcc2-45fc-8664-9ff0ec4f97f9" />
+Phase 3 — DynamoDB storage
+
+ESP32 publishes JSON
+IoT Rule intercepts MQTT topic and trigger Lambda(python)
+Writes DynamoDB and stores it
+
+Phase 4 — SNS email alerts
+
+
 
