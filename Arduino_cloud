@@ -8,8 +8,8 @@
 #include <Adafruit_SSD1306.h>
 
 // WiFi credentials
-#define WIFI_SSID "YOUR_WIFI_NAME"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 
 // AWS IoT
 #define AWS_IOT_ENDPOINT "a2zn91nznnf2ya-ats.iot.us-east-1.amazonaws.com"
@@ -25,22 +25,19 @@
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-// Paste your Amazon Root CA 1 contents here
+//Amazon Root CA 1
 const char AWS_CERT_CA[] = R"EOF(
 -----BEGIN CERTIFICATE-----
-PASTE ROOT CA HERE
 -----END CERTIFICATE-----)EOF";
 
-// Paste your device certificate contents here
+//device certificate
 const char AWS_CERT_CRT[] = R"EOF(
 -----BEGIN CERTIFICATE-----
-PASTE DEVICE CERTIFICATE HERE
 -----END CERTIFICATE-----)EOF";
 
-// Paste your private key contents here
+//private key
 const char AWS_CERT_PRIVATE[] = R"EOF(
 -----BEGIN RSA PRIVATE KEY-----
-PASTE PRIVATE KEY HERE
 -----END RSA PRIVATE KEY-----)EOF";
 
 DHT dht(DHTPIN, DHTTYPE);
