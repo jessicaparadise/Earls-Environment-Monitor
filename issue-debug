@@ -24,6 +24,8 @@ void connectAWS() {
 
 
 #include <time.h>
+
+
 void syncTime() {
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
   Serial.print("Syncing time");
@@ -33,3 +35,6 @@ void syncTime() {
   }
   Serial.println("\nTime synced!");
 }
+
+
+syncTime();
