@@ -43,7 +43,7 @@ const char AWS_CERT_PRIVATE[] = R"EOF(
 DHT dht(DHTPIN, DHTTYPE);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 WiFiClientSecure net;
-MQTTClient client(256);
+MQTTClient.mqttClient(256);
 
 void connectWiFi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -59,9 +59,9 @@ void connectAWS() {
   net.setCACert(AWS_CERT_CA);
   net.setCertificate(AWS_CERT_CRT);
   net.setPrivateKey(AWS_CERT_PRIVATE);
-  client.begin(AWS_IOT_ENDPOINT, 8883, net);
+  MQTTclient.begin(AWS_IOT_ENDPOINT, 8883, net);
   Serial.print("Connecting to AWS IoT");
-  while (!client.connect("earls-environment-monitor")) {
+  while (!MQTTclient.connect("earls-environment-monitor")) {
     Serial.print(".");
     delay(500);
   }
@@ -92,7 +92,7 @@ void setup() {
 }
 
 void loop() {
-  client.loop();
+  MQTTclient.loop();
   delay(3000);
 
   float humidity = dht.readHumidity();
@@ -110,7 +110,7 @@ void loop() {
   doc["device"] = "earls-environment-monitor";
   char jsonBuffer[200];
   serializeJson(doc, jsonBuffer);
-  client.publish(AWS_IOT_TOPIC, jsonBuffer);
+  MQTTclient.publish(AWS_IOT_TOPIC, jsonBuffer);
   Serial.println("Published to AWS!");
 
   // Update OLED
