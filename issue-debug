@@ -1,0 +1,19 @@
+void connectAWS() {
+  net.setCACert(AWS_CERT_CA);
+  net.setCertificate(AWS_CERT_CRT);
+  net.setPrivateKey(AWS_CERT_PRIVATE);
+  mqttClient.begin(AWS_IOT_ENDPOINT, 8883, net);
+  Serial.print("Connecting to AWS IoT");
+  int attempts = 0;
+  while (!mqttClient.connect("earls-environment-monitor")) {
+    Serial.print(".");
+    Serial.println(mqttClient.lastError());
+    delay(500);
+    attempts++;
+    if (attempts > 20) {
+      Serial.println("Failed to connect!");
+      break;
+    }
+  }
+  Serial.println("\nAWS IoT connected!");
+}
