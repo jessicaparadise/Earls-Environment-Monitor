@@ -1,49 +1,39 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
-#include <MQTTClient.h>
+#include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <time.h>
+#include "secrets.h"
 
-// WiFi credentials
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
-
-// AWS IoT
 #define AWS_IOT_ENDPOINT "a2zn91nznnf2ya-ats.iot.us-east-1.amazonaws.com"
 #define AWS_IOT_TOPIC "earls-environment-monitor/data"
-
-// DHT11
 #define DHTPIN 4
 #define DHTTYPE DHT11
-
-// OLED
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-//Amazon Root CA 1
-const char AWS_CERT_CA[] = R"EOF(
------BEGIN CERTIFICATE-----
------END CERTIFICATE-----)EOF";
-
-//device certificate
-const char AWS_CERT_CRT[] = R"EOF(
------BEGIN CERTIFICATE-----
------END CERTIFICATE-----)EOF";
-
-//private key
-const char AWS_CERT_PRIVATE[] = R"EOF(
------BEGIN RSA PRIVATE KEY-----
------END RSA PRIVATE KEY-----)EOF";
-
 DHT dht(DHTPIN, DHTTYPE);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 WiFiClientSecure net;
-MQTTClient.mqttClient(256);
+PubSubClient pubClient(net);
+
+void syncTime() {
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Syncing time");
+  while (time(nullptr) < 1000000000L) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nTime synced!");
+}
 
 void connectWiFi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -59,11 +49,13 @@ void connectAWS() {
   net.setCACert(AWS_CERT_CA);
   net.setCertificate(AWS_CERT_CRT);
   net.setPrivateKey(AWS_CERT_PRIVATE);
-  MQTTclient.begin(AWS_IOT_ENDPOINT, 8883, net);
+  pubClient.setServer(AWS_IOT_ENDPOINT, 8883);
+  pubClient.setBufferSize(512);
   Serial.print("Connecting to AWS IoT");
-  while (!MQTTclient.connect("earls-environment-monitor")) {
+  while (!pubClient.connect("earls-environment-monitor")) {
     Serial.print(".");
-    delay(500);
+    Serial.print(pubClient.state());
+    delay(2000);
   }
   Serial.println("\nAWS IoT connected!");
 }
@@ -88,32 +80,37 @@ void setup() {
   delay(2000);
 
   connectWiFi();
+  syncTime();
   connectAWS();
 }
 
 void loop() {
-  MQTTclient.loop();
+  if (!pubClient.connected()) {
+    Serial.println("Reconnecting...");
+    syncTime();
+    connectAWS();
+  }
+
+  pubClient.loop();
   delay(3000);
 
   float humidity = dht.readHumidity();
-  float tempF    = dht.readTemperature(true);
+  float tempF = dht.readTemperature(true);
 
   if (isnan(humidity) || isnan(tempF)) {
     Serial.println("DHT11 read failed");
     return;
   }
 
-  // Publish to AWS
   StaticJsonDocument<200> doc;
   doc["temperature"] = tempF;
   doc["humidity"] = humidity;
   doc["device"] = "earls-environment-monitor";
   char jsonBuffer[200];
   serializeJson(doc, jsonBuffer);
-  MQTTclient.publish(AWS_IOT_TOPIC, jsonBuffer);
+  pubClient.publish(AWS_IOT_TOPIC, jsonBuffer);
   Serial.println("Published to AWS!");
 
-  // Update OLED
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(15, 0);
