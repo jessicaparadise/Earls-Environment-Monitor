@@ -1,0 +1,144 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <MQTTClient.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// WiFi credentials
+#define WIFI_SSID "YOUR_WIFI_NAME"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+// AWS IoT
+#define AWS_IOT_ENDPOINT "a2zn91nznnf2ya-ats.iot.us-east-1.amazonaws.com"
+#define AWS_IOT_TOPIC "earls-environment-monitor/data"
+
+// DHT11
+#define DHTPIN 4
+#define DHTTYPE DHT11
+
+// OLED
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
+
+// Paste your Amazon Root CA 1 contents here
+const char AWS_CERT_CA[] = R"EOF(
+-----BEGIN CERTIFICATE-----
+PASTE ROOT CA HERE
+-----END CERTIFICATE-----)EOF";
+
+// Paste your device certificate contents here
+const char AWS_CERT_CRT[] = R"EOF(
+-----BEGIN CERTIFICATE-----
+PASTE DEVICE CERTIFICATE HERE
+-----END CERTIFICATE-----)EOF";
+
+// Paste your private key contents here
+const char AWS_CERT_PRIVATE[] = R"EOF(
+-----BEGIN RSA PRIVATE KEY-----
+PASTE PRIVATE KEY HERE
+-----END RSA PRIVATE KEY-----)EOF";
+
+DHT dht(DHTPIN, DHTTYPE);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+WiFiClientSecure net;
+MQTTClient client(256);
+
+void connectWiFi() {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
+}
+
+void connectAWS() {
+  net.setCACert(AWS_CERT_CA);
+  net.setCertificate(AWS_CERT_CRT);
+  net.setPrivateKey(AWS_CERT_PRIVATE);
+  client.begin(AWS_IOT_ENDPOINT, 8883, net);
+  Serial.print("Connecting to AWS IoT");
+  while (!client.connect("earls-environment-monitor")) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nAWS IoT connected!");
+}
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println("OLED not found!");
+    for(;;);
+  }
+
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(10, 20);
+  display.println("Earl's Environment");
+  display.setCursor(30, 35);
+  display.println("Monitor");
+  display.display();
+  delay(2000);
+
+  connectWiFi();
+  connectAWS();
+}
+
+void loop() {
+  client.loop();
+  delay(3000);
+
+  float humidity = dht.readHumidity();
+  float tempF    = dht.readTemperature(true);
+
+  if (isnan(humidity) || isnan(tempF)) {
+    Serial.println("DHT11 read failed");
+    return;
+  }
+
+  // Publish to AWS
+  StaticJsonDocument<200> doc;
+  doc["temperature"] = tempF;
+  doc["humidity"] = humidity;
+  doc["device"] = "earls-environment-monitor";
+  char jsonBuffer[200];
+  serializeJson(doc, jsonBuffer);
+  client.publish(AWS_IOT_TOPIC, jsonBuffer);
+  Serial.println("Published to AWS!");
+
+  // Update OLED
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(15, 0);
+  display.println("Earl's Environment");
+  display.setTextSize(2);
+  display.setCursor(0, 16);
+  display.print(tempF, 0);
+  display.println(" F");
+  display.setTextSize(2);
+  display.setCursor(0, 40);
+  display.print(humidity, 0);
+  display.println(" %RH");
+
+  if (tempF > 80.0) {
+    display.setTextSize(1);
+    display.setCursor(0, 56);
+    display.println("!! TOO HOT FOR EARL !!");
+  } else if (tempF < 60.0) {
+    display.setTextSize(1);
+    display.setCursor(0, 56);
+    display.println("!! TOO COLD FOR EARL !!");
+  }
+
+  display.display();
+}
