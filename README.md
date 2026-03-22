@@ -1,68 +1,54 @@
-# Earls-Environment-Monitor
-Real-time IoT environment monitor built with ESP32, DHT11, and OLED display. Tracks temperature and humidity with AWS cloud integration — built to monitor conditions for Earl, my cat.
+Earl's Environment Monitor
+A real-time IoT environmental monitoring system built with an ESP32 microcontroller and AWS cloud infrastructure. Tracks temperature and humidity conditions in my cat Earl's room, with live OLED display, cloud data storage, and automated email alerts.
 
-## Phase 1 — Hardware + OLED display 
+ Phase 1 — Hardware + OLED display
+ Phase 2 — AWS IoT Core MQTT connection
+ Phase 3 — DynamoDB storage
+ Phase 4 — SNS email alerts
+ Phase 5 — REST API + web dashboard
 
-**ESP32**
-microcontroller with WiFi and Bluetooth built in and GPIO pins (General Purpose Input/Output) that let it talk to other components
+ Architecture
+ DHT11 Sensor → ESP32 → WiFi → AWS IoT Core
+                  ↓                  ↓
+             OLED Display        IoT Rule
+                                     ↓
+                                  Lambda
+                                 ↓       ↓
+                             DynamoDB   SNS
+                                         ↓
+                                   Email Alert
+Hardware
+ELEGOO ESP32
+DHT11
+SSD1306 OLED
+Breadboard
 
-**DHT11**
-A sensor that measures temperature and humidity. It communicates by sending pulses of electricity that the ESP32 interprets as numbers.
-
-**OLED Display**
-A screen that uses protocol called **I2C** (eye-squared-C) SDA (data) and SCL (clock). The clock wire keeps both devices in sync
+Wiring:
+DHT11 S → ESP32 GPIO4
+DHT11 + → 3.3V rail
+DHT11 − → GND rail
+OLED SDA → ESP32 GPIO21
+OLED SCL → ESP32 GPIO22
+OLED VCC → 3.3V rail
+OLED GND → GND rail
 ![Untitled](https://github.com/user-attachments/assets/41a15d56-f4ed-4633-8569-ce84b0aa22bd)
 
-**DHT11 wiring**
+AWS Services Used
+AWS IoT Core: Receives MQTT messages from ESP32 over TLS
+IoT Rule: Routes incoming messages to Lambda
+Lambda: (Python) Processes data, writes to DynamoDB, triggers alerts
+DynamoDB: Stores all sensor readings with device + timestamp keys
+SNS: Sends email alerts when thresholds are exceeded
+API Gateway: REST API for dashboard data retrieval
 
-- `+` → 3.3V power rail (gives it electricity)
-- `−` → GND rail (completes the circuit)
-- `S` → GPIO 4 (sends data to ESP32)
+What I Learned:
+Hardware debugging — systematic wire-by-wire verification, I2C address scanning, reading pin labels on microcontrollers
+MQTT over TLS — certificate generation, device authentication, IoT Core policies
+Serverless architecture — event-driven Lambda triggered by IoT rules, no always-on server required
+NoSQL data modeling — DynamoDB partition + sort key design for time-series IoT data
+Library compatibility — debugging TLS handshake failures (-5 error) across different MQTT client libraries
+AWS region awareness — resources must exist in the same region to communicate
 
-**OLED wiring**
-
-- `VCC` → 3.3V power rail
-- `GND` → GND rail
-- `SCL` → GPIO 22 (clock signal) dedicated **I2C pins**
-- `SDA` → GPIO 21 (data signal) dedicated **I2C pins**
-- 
-**Libraries**
-
-- `DHT.h` — knows how to talk to DHT sensors
-- `Wire.h` — handles I2C communication
-- `Adafruit_SSD1306.h` — knows how to drive OLED chip
-- `Adafruit_GFX.h` — handles drawing text and graphics
-
-**setup()**
-initialize the sensor, find the OLED, and display the startup message "Earl's Room Monitor."
-
-**loop()**
-Every 3 seconds it reads temp and humidity from the DHT11, formats the numbers, and draws them on the OLED screen
-
-**I2C Address (0x3C)**
-the OLED's address is 0x3C (hexadecimal).  ran I2C scanner sketch to discover
-
-## The Debugging
-
-**DHT11 failed** — wires weren't making solid contact and the power wasn't connected properly. Fixed by methodically checking every single wire one at a time.
-
-**OLED not found** —  realized the wires weren't actually crossing between the two breadboards. Fixed by physically tracing every wire and confirming row by row.
-
-**Pin sharing conflict** — DHT11 and OLED were both trying to use the same 3V3 pin on the ESP32. Fixed by routing both through the breadboard rail so the ESP32 feeds one rail and everything draws from it.
-
-## Phase 2 — AWS IoT Core connection
-
-DHT11 sensor reads every 3 seconds
-ESP32 formats as JSON and publishes via MQTT over TLS
-AWS IoT Core receives it
-
-Phase 3 — DynamoDB storage
-
-ESP32 publishes JSON
-IoT Rule intercepts MQTT topic and trigger Lambda(python)
-Writes DynamoDB and stores it
-
-Phase 4 — SNS email alerts
-
-
-
+About
+Built by Jessica Paradise as part of a hands-on cloud architecture portfolio while pursuing a BS in Computer Science at Western Governors University and studying for the AWS Solutions Architect Associate certification.
+Earl is doing great. 🐱
