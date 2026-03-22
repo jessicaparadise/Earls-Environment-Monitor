@@ -1,0 +1,24 @@
+import json
+import boto3
+import time
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('earls-environment-monitor')
+
+def lambda_handler(event, context):
+    print("Received event:", json.dumps(event))
+    
+    item = {
+        'device': event.get('device', 'earls-environment-monitor'),
+        'timestamp': int(time.time()),
+        'temperature': str(event.get('temperature', 0)),
+        'humidity': str(event.get('humidity', 0))
+    }
+    
+    table.put_item(Item=item)
+    print("Saved to DynamoDB:", item)
+    
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Data saved successfully!')
+    }
