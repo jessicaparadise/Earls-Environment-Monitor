@@ -17,3 +17,19 @@ void connectAWS() {
   }
   Serial.println("\nAWS IoT connected!");
 }
+
+
+//error code was -5 ; TLS handshake fail bc of time sync
+//added time sync function
+
+
+#include <time.h>
+void syncTime() {
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Syncing time");
+  while (time(nullptr) < 1000000000L) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nTime synced!");
+}
