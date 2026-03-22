@@ -4,19 +4,43 @@ import time
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('earls-environment-monitor')
+sns = boto3.client('sns', region_name='us-east-1')
+
+SNS_TOPIC_ARN = 'PASTE_YOUR_SNS_TOPIC_ARN_HERE'
+TEMP_MAX = 80.0
+TEMP_MIN = 60.0
 
 def lambda_handler(event, context):
     print("Received event:", json.dumps(event))
     
+    temperature = float(event.get('temperature', 0))
+    humidity = float(event.get('humidity', 0))
+    device = event.get('device', 'earls-environment-monitor')
+    
     item = {
-        'device': event.get('device', 'earls-environment-monitor'),
+        'device': device,
         'timestamp': int(time.time()),
-        'temperature': str(event.get('temperature', 0)),
-        'humidity': str(event.get('humidity', 0))
+        'temperature': str(temperature),
+        'humidity': str(humidity)
     }
     
     table.put_item(Item=item)
     print("Saved to DynamoDB:", item)
+    
+    if temperature > TEMP_MAX:
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=f"🐱 EARL ALERT! Too hot! Temp: {temperature}°F Humidity: {humidity}%",
+            Subject="Earl's Room Monitor Alert"
+        )
+        print("Hot alert sent!")
+    elif temperature < TEMP_MIN:
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=f"🐱 EARL ALERT! Too cold! Temp: {temperature}°F Humidity: {humidity}%",
+            Subject="Earl's Room Monitor Alert"
+        )
+        print("Cold alert sent!")
     
     return {
         'statusCode': 200,
