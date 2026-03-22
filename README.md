@@ -1,6 +1,9 @@
 # Earls-Environment-Monitor
 Real-time IoT environment monitor built with ESP32, DHT11, and OLED display. Tracks temperature and humidity with AWS cloud integration — built to monitor conditions for Earl, my cat.
 
+<img width="1005" height="576" alt="Screenshot 2026-03-22 at 12-33-01 MQTT test client IoT Core us-east-1" src="https://github.com/user-attachments/assets/b27a1933-dcc2-45fc-8664-9ff0ec4f97f9" />
+
+
 ![Untitled](https://github.com/user-attachments/assets/41a15d56-f4ed-4633-8569-ce84b0aa22bd)
 
 
