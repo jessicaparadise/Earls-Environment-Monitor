@@ -6,7 +6,7 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('earls-environment-monitor')
 sns = boto3.client('sns', region_name='us-east-1')
 
-SNS_TOPIC_ARN = 'PASTE_YOUR_SNS_TOPIC_ARN_HERE'
+SNS_TOPIC_ARN = ''
 TEMP_MAX = 80.0
 TEMP_MIN = 60.0
 
