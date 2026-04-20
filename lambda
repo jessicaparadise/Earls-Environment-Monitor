@@ -1,4 +1,4 @@
-import json
+import json 
 import boto3
 import time
 
@@ -33,14 +33,14 @@ def lambda_handler(event, context):
             Message=f"🐱 EARL ALERT! Too hot! Temp: {temperature}°F Humidity: {humidity}%",
             Subject="Earl's Room Monitor Alert"
         )
-        print("Hot alert sent!")
+        print("Earl Alert sent!")
     elif temperature < TEMP_MIN:
         sns.publish(
             TopicArn=SNS_TOPIC_ARN,
             Message=f"🐱 EARL ALERT! Too cold! Temp: {temperature}°F Humidity: {humidity}%",
             Subject="Earl's Room Monitor Alert"
         )
-        print("Cold alert sent!")
+        print("Earl alert sent!")
     
     return {
         'statusCode': 200,
